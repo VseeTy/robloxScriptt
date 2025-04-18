@@ -696,6 +696,25 @@ Callback = function()
 end,
 })
 
+local Button = TeleportTab:CreateButton({
+   Name = "Tp teo",
+   Callback = function()
+    local plr = game.Players.LocalPlayer.Name
+    local target = game.Workspace.Tfou3likbebekmouk.HumanoidRootPart.Position
+
+    game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(target)
+   end,
+})
+local Button = TeleportTab:CreateButton({
+   Name = "Tp matheo",
+   Callback = function()
+    local plr = game.Players.LocalPlayer.Name
+    local target = game.Workspace.Vseety.HumanoidRootPart.Position
+
+    game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(target)
+   end,
+})
+
 
 
     
