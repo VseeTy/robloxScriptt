@@ -70,82 +70,133 @@ getPlayerSlot()
     local MiscSection = MiscTab:CreateSection("🧰 Other Tools & Extras")
 
 
-    local AutoFarmTab = Window:CreateTab("🚜 AutoFarm", nil)
-    local AutoFarmSection = AutoFarmTab:CreateSection("🤖 Automated Farming Tools")        
+    local FarmTab = Window:CreateTab("🚜 Farm", nil)
+    local FarmSection = FarmTab:CreateSection("🤖 Automated Farming Tools")        
 
-    Rayfield:Notify({
-    Title = "Notification Title",
-    Content = "Notification Content",
-    Duration = 6.5,
-    Image = nil,
-    })
 
-    local Button = MainTab:CreateButton({
+
+    ------------------------------------------------- MAIN TAB -------------------------------------------------
+    ------------------------------------------------- MAIN TAB -------------------------------------------------
+    ------------------------------------------------- MAIN TAB -------------------------------------------------
+    ------------------------------------------------- MAIN TAB -------------------------------------------------
+    ------------------------------------------------- MAIN TAB -------------------------------------------------
+
+    local Toggle = MainTab:CreateToggle({
         Name = "💥 Infinite Jump",
-        Callback = function()
-            _G.infinjump = not _G.infinjump
-    
-            if _G.infinJumpStarted == nil then
-                _G.infinJumpStarted = true
-                
-                -- Send notification about infinite jump activation
-                Rayfield:Notify({
-                    Title = "🚀 Infinite Jump Activated!",
-                    Content = "You can now jump infinitely! 🌌",
-                    Duration = 5,
-                    Image = 4483362458,  -- Image ID (change if needed)
-                })
-            
-                local plr = game:GetService('Players').LocalPlayer
-                local m = plr:GetMouse()
-                m.KeyDown:connect(function(k)
-                    if _G.infinjump then
-                        if k:byte() == 32 then  -- Space key
-                            humanoid = game:GetService'Players'.LocalPlayer.Character:FindFirstChildOfClass('Humanoid')
-                            humanoid:ChangeState('Jumping')
-                            wait()
-                            humanoid:ChangeState('Seated')
-                        end
-                    end
-                end)
-            end
+        CurrentValue = false,
+        Flag = "InfiniteJumpToggle",
+        Callback = function(Value)
+             _G.infinjump = Value
+     
+             Rayfield:Notify({
+                 Title = Value and "🚀 Infinite Jump Enabled!" or "🛑 Infinite Jump Disabled",
+                 Content = Value and "You can now jump infinitely! 🌌" or "Infinite jump has been turned off.",
+                 Duration = 5,
+                 Image = 4483362458,
+             })
+     
+             if _G.infinJumpStarted == nil then
+                 _G.infinJumpStarted = true
+     
+                 local plr = game:GetService("Players").LocalPlayer
+                 local m = plr:GetMouse()
+     
+                 m.KeyDown:Connect(function(k)
+                     if _G.infinjump and k:byte() == 32 then -- Space key
+                         local humanoid = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+                         if humanoid then
+                             humanoid:ChangeState("Jumping")
+                             task.wait()
+                             humanoid:ChangeState("Seated")
+                         end
+                     end
+                 end)
+             end
         end,
-    })
+     })
+     
     
-
-    
-    local Input = MainTab:CreateInput({
+    local Slider = MainTab:CreateSlider({
         Name = "⚡ WalkSpeed Input",
-        CurrentValue = "16",
-        PlaceholderText = "[ 0 - 300 ]",
-        RemoveTextAfterFocusLost = true,
-        Flag = "Input1",
-        Callback = function(Text)
-            local speed = tonumber(Text) -- Convert the input text to a number
-            
-            -- Ensure the value is within a valid range (0 - 300)
-            if speed and speed >= 0 and speed <= 300 then
-                game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = speed
-                
-                -- Notify the user when the walk speed is set
-                Rayfield:Notify({
-                    Title = "🏃 WalkSpeed Updated!",
-                    Content = "Your WalkSpeed is now set to: " .. speed,
-                    Duration = 4,
-                    Image = 4483362458, -- Optional Image (change if needed)
-                })
+        Range = {16, 300},
+        Increment = 1,
+        Suffix = "Speed",
+        CurrentValue = 16,
+        Flag = "Slider1",
+
+        Callback = function(Value)
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+        end,
+     })
+
+    ------------------------------------------------- TELEPORT TAB -------------------------------------------------
+    ------------------------------------------------- TELEPORT TAB -------------------------------------------------
+    ------------------------------------------------- TELEPORT TAB -------------------------------------------------
+    ------------------------------------------------- TELEPORT TAB -------------------------------------------------
+    ------------------------------------------------- TELEPORT TAB -------------------------------------------------
+
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local playerNames = {}
+    local teleportDropdown
+    local currentSelection = nil
+    
+    -- Fonction pour actualiser la liste de joueurs
+    local function updatePlayerList()
+        playerNames = {}
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                table.insert(playerNames, player.Name)
+            end
+        end
+    
+        -- Mise à jour du dropdown
+        if teleportDropdown then
+            teleportDropdown:Refresh(playerNames)
+    
+            -- Si la sélection actuelle n'existe plus, on la reset
+            if currentSelection and not table.find(playerNames, currentSelection) then
+                teleportDropdown:Set({})
+                currentSelection = nil
+            end
+        end
+    end
+    
+    -- Crée le dropdown
+    teleportDropdown = TeleportTab:CreateDropdown({
+        Name = "🚀 Teleport to Player",
+        Options = playerNames,
+        CurrentOption = {},
+        MultipleOptions = false,
+        Flag = "TeleportToPlayerDropdown",
+        Callback = function(Options)
+            local targetName = Options[1]
+            currentSelection = targetName
+    
+            local targetPlayer = Players:FindFirstChild(targetName)
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local targetPos = targetPlayer.Character.HumanoidRootPart.Position
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
+                end
             else
-                -- Notify if the input is invalid
                 Rayfield:Notify({
-                    Title = "❌ Invalid Input!",
-                    Content = "Please enter a value between 0 and 300.",
+                    Title = "⚠️ Teleport Failed",
+                    Content = "The target player is no longer available.",
                     Duration = 4,
-                    Image = 4483362458, -- Optional Image (change if needed)
+                    Image = 4483362458,
                 })
             end
         end,
     })
     
+    -- Écoute les connexions et déconnexions
+    Players.PlayerAdded:Connect(updatePlayerList)
+    Players.PlayerRemoving:Connect(updatePlayerList)
+    
+    -- Initialisation
+    updatePlayerList()
+
 
     local DropdownStaticTP = TeleportTab:CreateDropdown({
         Name = "📍 Static Teleport Locations",
@@ -228,137 +279,6 @@ getPlayerSlot()
             end
         end,
     })
-    
-    
-
-    local Button = MiscTab:CreateButton({
-        Name = "Open Vehicle Shop",
-        Callback = function()
-            local prox = game.Workspace.Placeables["3"].VehicleSpawner.ScreenPart.ProximityPrompt
-            fireproximityprompt(prox)
-        end,
-    })
-    local Button = MiscTab:CreateButton({
-        Name = "Buy Vehicle",
-        Callback = function()
-
-            local plr = game.Players.LocalPlayer.Name
-            local vehicleSpawnerPos = game.Workspace.Placeables["3"].VehicleSpawner.ScreenPart.Position
-
-            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(vehicleSpawnerPos)
-
-            local prox = game.Workspace.Placeables["3"].VehicleSpawner.ScreenPart.ProximityPrompt
-            fireproximityprompt(prox)
-        end,
-    })
-
-    local Button = MiscTab:CreateButton({
-        Name = "Open Backpack Shop",
-        Callback = function()
-
-            local plr = game.Players.LocalPlayer.Name
-            local plrOriginalPos = game.Workspace[plr].HumanoidRootPart.Position
-
-            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(-1543.1331787109375, 9.99802303314209, 6.049820899963379)
-
-            local prox = game.Workspace.BackpackStore.ActivationPoint.ProximityPrompt
-            fireproximityprompt(prox)
-
-            wait(0.1)
-
-            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(plrOriginalPos)
-        end,
-    })
-
-    local DropDownBackpack = MiscTab:CreateDropdown({
-
-        Name = "Teleport to a custom plot [1-8]",
-        Options = {"Small Backpack | 100$","Medium Backpack | 5000$", "Large Backpack | 100k$", "XL Backpack $1500K"},
-        CurrentOption = {"Buy Backpack"},
-        MultipleOptions = false,
-        Flag = "backpackShop",
-        Callback = function(selectedOption)
-        local plr = game.Players.LocalPlayer.Name
-        local plrOriginalPos = game.Workspace[plr].HumanoidRootPart.Position
-        local prox = game.Workspace.BackpackStore.ActivationPoint.ProximityPrompt
-        
-        local plr = game.Players.LocalPlayer.Name
-
-            if selectedOption[1] == "Small Backpack | 100$" then
-                game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(-1543.1331787109375, 9.99802303314209, 6.049820899963379)
-                local args = {
-                    [1] = 7,
-                    [2] = "SmallBackpack"
-                }
-                game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("5").BuyItem:FireServer(unpack(args))
-                wait(0.1)
-                local args = {
-                    [1] = 426,
-                    [2] = "Backpack",
-                    [3] = "SmallBackpack"
-                    }
-                    game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("3").EquipItem:FireServer(unpack(args))
-                wait(0.1)
-
-                game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(plrOriginalPos)
-            end
-            if selectedOption[1] == "Medium Backpack | 5000$" then
-                game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(-1543.1331787109375, 9.99802303314209, 6.049820899963379)
-                local args = {
-                    [1] = 7,
-                    [2] = "MediumBackpack"
-                }
-                game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("5").BuyItem:FireServer(unpack(args))
-                wait(0.1)
-                local args = {
-                    [1] = 426,
-                    [2] = "Backpack",
-                    [3] = "MediumBackpack"
-                    }
-                    game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("3").EquipItem:FireServer(unpack(args))
-                wait(0.1)
-
-                game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(plrOriginalPos)
-            end
-            if selectedOption[1] == "Large Backpack | 100k$" then
-                game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(-1543.1331787109375, 9.99802303314209, 6.049820899963379)
-                local args = {
-                    [1] = 7,
-                    [2] = "LargeBackpack"
-                }
-                game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("5").BuyItem:FireServer(unpack(args))
-                wait(0.1)
-                local args = {
-                [1] = 426,
-                [2] = "Backpack",
-                [3] = "LargeBackpack"
-                }
-                game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("3").EquipItem:FireServer(unpack(args))
-
-                wait(0.1)
-
-                game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(plrOriginalPos)
-            end
-            if selectedOption[1] == "XL Backpack $1500K" then
-                game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(-1543.1331787109375, 9.99802303314209, 6.049820899963379)
-                local args = {
-                    [1] = 7,
-                    [2] = "XLBackpack"
-                }
-                game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("5").BuyItem:FireServer(unpack(args))
-                wait(0.1)
-                local args = {
-                    [1] = 426,
-                    [2] = "Backpack",
-                    [3] = "XLBackpack"
-                    }
-                    game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("3").EquipItem:FireServer(unpack(args))
-                wait(0.1)
-
-                game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(plrOriginalPos)
-            end
-        end,        
-    })    
 
     local Button = TeleportTab:CreateButton({
         Name = "🔑 Teleport to Your Slot",
@@ -381,341 +301,471 @@ getPlayerSlot()
             })
         end,
     })
-    
 
-local Keybind = AutoFarmTab:CreateKeybind({
-    Name = "📦 Store Everything",
-    CurrentKeybind = "U",
-    HoldToInteract = false,
-    Flag = "Keybind1",
-    Callback = function()
-        local originalPlayerPos = nil
+    ------------------------------------------------- MISC TAB -------------------------------------------------
+    ------------------------------------------------- MISC TAB -------------------------------------------------
+    ------------------------------------------------- MISC TAB -------------------------------------------------
+    ------------------------------------------------- MISC TAB -------------------------------------------------
+    ------------------------------------------------- MISC TAB -------------------------------------------------
 
-        local plr = game.Players.LocalPlayer.Name
-        local originalPlayerPos = game.Workspace[plr].HumanoidRootPart.Position
+    local Button = MiscTab:CreateButton({
+        Name = "🛒 Buy Vehicle (TPs to your slot)",
+        Callback = function()
+            local plr = game.Players.LocalPlayer.Name
+            local vehicleSpawnerPos = game.Workspace.Placeables[PlayerSlot].VehicleSpawner.ScreenPart.Position
+    
+            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(vehicleSpawnerPos)
+    
+            local prox = game.Workspace.Placeables[PlayerSlot].VehicleSpawner.ScreenPart.ProximityPrompt
+            fireproximityprompt(prox)
+    
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "🛒 Vehicle Purchase",
+                Text = "Teleported and attempted to buy a vehicle.",
+                Duration = 3
+            })
+        end,
+    })
 
-        Rayfield:Notify({
-            Title = "🚚 Heading to Unloader",
-            Content = "Moving to the unloader to store your cargo...",
-            Duration = 4,
-            Image = 4483362458,
-        })
-
-        local promptCargo = game.Workspace.Placeables[PlayerSlot].UnloaderSystem.Unloader.CargoVolume.CargoPrompt
-        local promptPostion = game.Workspace.Placeables[PlayerSlot].UnloaderSystem.Unloader.CargoVolume.Position
-
-        game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(promptPostion)
-        wait(0.4)
-        fireproximityprompt(promptCargo)
-
-        game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(originalPlayerPos)
-
-        Rayfield:Notify({
-            Title = "✅ Stored Successfully",
-            Content = "📦 Your cargo has been unloaded and stored!",
-            Duration = 6.5,
-            Image = 4483362458,
-        })
-    end,
-})
-
-
+    local Button = MiscTab:CreateButton({
+        Name = "🚗 Open Vehicle Shop",
+        Callback = function()
+            local prox = game.Workspace.Placeables[PlayerSlot].VehicleSpawner.ScreenPart.ProximityPrompt
+            fireproximityprompt(prox)
     
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "🚗 Vehicle Shop",
+                Text = "Vehicle shop opened!",
+                Duration = 3
+            })
+        end,
+    })
     
-
-    local runningHoverCheck = false
-
-    local Toggle = AutoFarmTab:CreateToggle({
-        Name = "OneShot Block (Bugged)",
-        CurrentValue = false,
-        Flag = "Toggle1",
-        Callback = function(Value)
-            runningHoverCheck = Value
+    local Button = MiscTab:CreateButton({
+        Name = "🎒 Open Backpack Shop",
+        Callback = function()
+            local plr = game.Players.LocalPlayer.Name
+            local plrOriginalPos = game.Workspace[plr].HumanoidRootPart.Position
     
-            task.spawn(function()
-                -- Find the correct folder once, outside the loop
-                local plr = game.Players.LocalPlayer
-                local madCommEvents = game.ReplicatedStorage:WaitForChild("MadCommEvents")
-                local folders = madCommEvents:GetChildren()
-                local selectedFolder = nil
+            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(-1543.1331787109375, 9.99802303314209, 6.049820899963379)
     
-                for _, folder in ipairs(folders) do
-                    if folder:FindFirstChild("Activate") then
-                        selectedFolder = folder
-                        break
-                    end
-                end
+            local prox = game.Workspace.BackpackStore.ActivationPoint.ProximityPrompt
+            fireproximityprompt(prox)
     
-                if not selectedFolder then
-                    warn("No folder with 'Activate' found.")
-                    return
-                end
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "🎒 Backpack Shop",
+                Text = "Shop opened! Returning in 5 seconds...",
+                Duration = 3
+            })
     
-                -- Loop to fire event
-                while runningHoverCheck do
-                    local plrName = plr.Name
-                    local plrPosition = game.Workspace[plrName].HumanoidRootPart.Position
-    
-                    local hoverBox = game.Workspace:FindFirstChild("HoverSelectionBox2")
-                    if hoverBox then
-                        local targetPos = hoverBox.Position
-                        local targetX = targetPos.X - 2
-                        local targetY = targetPos.Y - 2
-                        local targetZ = targetPos.Z - 2
-    
-                        print("x:", targetX)
-                        print("y:", targetY)
-                        print("z:", targetZ)
-                        print("\n\n\n\n")
-    
-                        local args = {
-                            [1] = 19,
-                            [2] = Vector3.new(targetX, targetY, targetZ)
-                        }
-    
-                        selectedFolder.Activate:FireServer(unpack(args))
-                    end
-    
-                    wait(0.5) -- small delay to avoid spamming
-                end
-            end)
+            wait(5)
+            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(plrOriginalPos)
         end,
     })
     
 
-local maxDistanceEsp = 100
-local showOreLabels = false
-local labelConnections = {}
-local enabledOreTypes = {}
-local oreLabels = {}
-local currentHRP
+    local DropDownBackpack = MiscTab:CreateDropdown({
 
-local Slider = MainTab:CreateSlider({
-    Name = "⛏️ Ore ESP Distance",
-    Range = {50, 1000},
-    Increment = 1,
-    Suffix = " studs",
-    CurrentValue = 100,
-    Flag = "Slider1",
-    Callback = function(Value)
-        maxDistanceEsp = Value
-    end,
-})
-
-
-local DropdownOre = MainTab:CreateDropdown({
-    Name = "Select Ores to Visualize",
-    Options = {
-        "GemBlockMesh",
-        "CrystallineMetalOre",
-        "OreMesh",
-        "CubicBlockMetal",
-        "ShaleMetalBlock"
-    },
-    CurrentOption = {},
-    MultipleOptions = true,
-    Flag = "SelectedOresToDisplay",
-    Callback = function(selectedOres)
-        showOreLabels = false
-        -- Disconnect previous label connections
-        for _, conn in ipairs(labelConnections) do
-            if conn.Connected then
-                conn:Disconnect()
-            end
-        end
-        labelConnections = {}
-
-        -- Destroy existing ore labels
-        for _, label in pairs(oreLabels) do
-            if label and label.Parent then
-                label:Destroy()
-            end
-        end
-        oreLabels = {}
-
-        enabledOreTypes = {}
-        -- Update enabled ore types based on selected ores
-        for _, oreName in pairs(selectedOres) do
-            enabledOreTypes[oreName] = true
-        end
-
-        -- If no ores are selected, stop the labeling process and clear ore labels
-        if #selectedOres == 0 then
-            -- Prevent ore labels from being created
-            return
-        end
-
-        showOreLabels = true
-
-        local blockFolder = game.Workspace:WaitForChild("SpawnedBlocks")
-        local player = game.Players.LocalPlayer
-
-        local function updateHRP()
-            local character = player.Character or player.CharacterAdded:Wait()
-            currentHRP = character:WaitForChild("HumanoidRootPart")
-        end
-
-        updateHRP()
-        player.CharacterAdded:Connect(function()
-            updateHRP()
-        end)
-
-        local labelColors = {
-            ["GemBlockMesh"] = Color3.fromRGB(0, 255, 255),
-            ["CrystallineMetalOre"] = Color3.fromRGB(255, 255, 0),
-            ["OreMesh"] = Color3.fromRGB(255, 128, 0),
-            ["CubicBlockMetal"] = Color3.fromRGB(255, 0, 0),
-            ["ShaleMetalBlock"] = Color3.fromRGB(128, 128, 255),
-        }
-
-        local emojis = {
-            ["GemBlockMesh"] = "💎",
-            ["CrystallineMetalOre"] = "🧊",
-            ["OreMesh"] = "⛏️",
-            ["CubicBlockMetal"] = "🧱",
-            ["ShaleMetalBlock"] = "🪨",
-        }
-
-        local function createLabel(block)
-            if oreLabels[block] then return end
-            
-            local gui = Instance.new("BillboardGui")
-            gui.Name = "FloatingLabel"
-            gui.Size = UDim2.new(0, 100, 0, 30)  -- Increased size for readability
-            gui.StudsOffset = Vector3.new(0, 0, 0)  -- No offset, centered on the block
-            gui.Adornee = block
-            gui.AlwaysOnTop = true
-            gui.Enabled = false
-            gui.Parent = block
-
-            local textLabel = Instance.new("TextLabel")
-            textLabel.Size = UDim2.new(1, 0, 1, 0)
-            textLabel.BackgroundTransparency = 1
-            textLabel.Text = (emojis[block.Name] or "") .. " " .. block.Name
-            textLabel.TextColor3 = labelColors[block.Name] or Color3.new(1, 1, 1)
-            textLabel.TextStrokeTransparency = 0.5
-            textLabel.TextScaled = true
-            textLabel.Font = Enum.Font.Gotham
-            textLabel.TextYAlignment = Enum.TextYAlignment.Center
-            textLabel.TextXAlignment = Enum.TextXAlignment.Center
-            textLabel.Parent = gui
-
-            oreLabels[block] = gui
-
-            local conn = game:GetService("RunService").RenderStepped:Connect(function()
-                if not currentHRP or not block:IsDescendantOf(workspace) then
-                    gui.Enabled = false
-                    return
-                end
-
-                local dist = (currentHRP.Position - block.Position).Magnitude
-                gui.Enabled = dist <= maxDistanceEsp
-            end)
-
-            table.insert(labelConnections, conn)
-        end
-
-        -- Refresh labels based on the selected ores
-        local function refreshLabels()
-            if #selectedOres == 0 then
-                -- No ores selected, exit early
-                return
-            end
-            for _, block in pairs(blockFolder:GetChildren()) do
-                if enabledOreTypes[block.Name] then
-                    createLabel(block)
-                else
-                    local label = block:FindFirstChild("FloatingLabel")
-                    if label then
-                        label:Destroy()
-                    end
-                end
-            end
-        end
-
-        -- Refresh labels when ores are selected
-        refreshLabels()
-
-        -- Listen for newly spawned blocks and create labels if they are enabled
-        local conn = blockFolder.ChildAdded:Connect(function(child)
-            if enabledOreTypes[child.Name] then
-                task.wait(0.1) -- short wait to ensure it's fully loaded
-                createLabel(child)
-            end
-        end)
-        table.insert(labelConnections, conn)
-    end,
-})
-
-
-
-LocalLastPosition = nil
-
-local Button = AutoFarmTab:CreateButton({
-Name = "📍 Save Current Position",
-Callback = function()
-    local plr = game.Players.LocalPlayer.Name
-    LocalLastPosition = game.Workspace[plr].HumanoidRootPart.Position
-
-    Rayfield:Notify({
-        Title = "✅ Position Saved",
-        Content = "Your current position has been successfully saved.",
-        Duration = 6.5,
-        Image = 4483362458,
+        Name = "🎒 Buy & Equip Backpack",
+        Options = {
+            "🟩 Small Backpack | 100$",
+            "🟨 Medium Backpack | 5000$",
+            "🟥 Large Backpack | 100k$",
+            "🔷 XL Backpack | 1500K$"
+        },
+        CurrentOption = {"Buy Backpack"},
+        MultipleOptions = false,
+        Flag = "backpackShop",
+        Callback = function(selectedOption)
+            local plr = game.Players.LocalPlayer.Name
+            local plrOriginalPos = game.Workspace[plr].HumanoidRootPart.Position
+            local shopPos = Vector3.new(-1543.1331787109375, 9.99802303314209, 6.049820899963379)
+    
+            local backpackData = {
+                ["🟩 Small Backpack | 100$"] = {buy = "SmallBackpack", equip = "SmallBackpack"},
+                ["🟨 Medium Backpack | 5000$"] = {buy = "MediumBackpack", equip = "MediumBackpack"},
+                ["🟥 Large Backpack | 100k$"] = {buy = "LargeBackpack", equip = "LargeBackpack"},
+                ["🔷 XL Backpack | 1500K$"] = {buy = "XLBackpack", equip = "XLBackpack"},
+            }
+    
+            local data = backpackData[selectedOption[1]]
+            if not data then return end
+    
+            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(shopPos)
+    
+            local argsBuy = { [1] = 7, [2] = data.buy }
+            game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("5").BuyItem:FireServer(unpack(argsBuy))
+            wait(0.1)
+    
+            local argsEquip = { [1] = 426, [2] = "Backpack", [3] = data.equip }
+            game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("3").EquipItem:FireServer(unpack(argsEquip))
+            wait(0.1)
+    
+            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(plrOriginalPos)
+    
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "🎒 Backpack Equipped",
+                Text = data.equip .. " has been purchased and equipped!",
+                Duration = 4
+            })
+        end,        
     })
 
-    print("✅ Position saved:", LocalLastPosition)
-end,
-})
+    local Button = MiscTab:CreateButton({
+        Name = "⛏️ Open Pickaxe Shop",
+        Callback = function()
+            local plr = game.Players.LocalPlayer.Name
+            local plrOriginalPos = game.Workspace[plr].HumanoidRootPart.Position
+    
+            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(-1542.52, 9.99, 35.40)
+    
+            local prox = game.Workspace["Pick Store"].ActivationPoint.ProximityPrompt
+            fireproximityprompt(prox)
+    
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "⛏️ Pickaxe Shop",
+                Text = "Shop opened! Returning in 5 seconds...",
+                Duration = 3
+            })
+    
+            wait(5)
+            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(plrOriginalPos)
+        end,
+    })
 
-local Button = AutoFarmTab:CreateButton({
-Name = "🚀 Teleport to Saved Position",
-Callback = function()
-    local plr = game.Players.LocalPlayer.Name
-    if LocalLastPosition then
-        game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(LocalLastPosition)
+    local DropDownPickaxe = MiscTab:CreateDropdown({
+        Name = "⛏️ Buy & Equip Pickaxe",
+        Options = {
+            "Cooper Pickaxe | 40$",
+            "Iron Pickaxe | 500$"
+        },
+        CurrentOption = {"Buy Pickaxe"},
+        MultipleOptions = false,
+        Flag = "pickaxeShop",
+        Callback = function(selectedOption)
+            local selected = selectedOption[1]
+            local plr = game.Players.LocalPlayer
+            local char = plr.Character
+            if not selected or not char then return end
+    
+            local pickaxeData = {
+                ["Cooper Pickaxe | 40$"] = { buy = "CopperPick", equip = "CopperPick" },
+                ["Iron Pickaxe | 500$"] = { buy = "IronPick", equip = "IronPick" }
+            }
+    
+            local data = pickaxeData[selected]
+            if not data then return end
+    
+            local originalPos = char:FindFirstChild("HumanoidRootPart") and char.HumanoidRootPart.Position
+            if not originalPos then return end
+    
+            local shopPos = Vector3.new(-1542.52, 9.99, 35.40)
+    
+            -- Teleport to shop
+            char.HumanoidRootPart.CFrame = CFrame.new(shopPos)
+            wait(0.1)
+    
+            -- Buy pickaxe
+            local argsBuy = { [1] = 7, [2] = data.buy }
+            game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("5").BuyItem:FireServer(unpack(argsBuy))
+            wait(0.1)
+    
+            -- Equip pickaxe
+            local argsEquip = { [1] = 426, [2] = "Backpack", [3] = data.equip }
+            game:GetService("ReplicatedStorage").MadCommEvents:FindFirstChild("3").EquipItem:FireServer(unpack(argsEquip))
+            wait(0.1)
+    
+            -- Return to original position
+            char.HumanoidRootPart.CFrame = CFrame.new(originalPos)
+    
+            -- Notification
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "⛏️ Pickaxe Equipped",
+                Text = data.equip .. " has been purchased and equipped!",
+                Duration = 4
+            })
+        end,
+    })
+    
 
+    ------------------------------------------------- FARM TAB -------------------------------------------------
+    ------------------------------------------------- FARM TAB -------------------------------------------------
+    ------------------------------------------------- FARM TAB -------------------------------------------------
+    ------------------------------------------------- FARM TAB -------------------------------------------------
+    ------------------------------------------------- FARM TAB -------------------------------------------------
+
+    local Keybind = FarmTab:CreateKeybind({
+        Name = "📦 Store Everything",
+        CurrentKeybind = "U",
+        HoldToInteract = false,
+        Flag = "Keybind1",
+        Callback = function()
+            local originalPlayerPos = nil
+    
+            local plr = game.Players.LocalPlayer.Name
+            local originalPlayerPos = game.Workspace[plr].HumanoidRootPart.Position
+    
+            Rayfield:Notify({
+                Title = "🚚 Heading to Unloader",
+                Content = "Moving to the unloader to store your cargo...",
+                Duration = 4,
+                Image = 4483362458,
+            })
+    
+            local promptCargo = game.Workspace.Placeables[PlayerSlot].UnloaderSystem.Unloader.CargoVolume.CargoPrompt
+            local promptPostion = game.Workspace.Placeables[PlayerSlot].UnloaderSystem.Unloader.CargoVolume.Position
+    
+            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(promptPostion)
+            wait(0.4)
+            fireproximityprompt(promptCargo)
+    
+            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(originalPlayerPos)
+    
+            Rayfield:Notify({
+                Title = "✅ Stored Successfully",
+                Content = "📦 Your cargo has been unloaded and stored!",
+                Duration = 6.5,
+                Image = 4483362458,
+            })
+        end,
+    })
+    
+    LocalLastPosition = nil
+    
+    local Button = FarmTab:CreateButton({
+    Name = "📍 Save Current Position",
+    Callback = function()
+        local plr = game.Players.LocalPlayer.Name
+        LocalLastPosition = game.Workspace[plr].HumanoidRootPart.Position
+    
         Rayfield:Notify({
-            Title = "🛸 Teleported",
-            Content = "You have been teleported to your saved position.",
+            Title = "✅ Position Saved",
+            Content = "Your current position has been successfully saved.",
             Duration = 6.5,
             Image = 4483362458,
         })
+    
+        print("✅ Position saved:", LocalLastPosition)
+    end,
+    })
+    
+    local Button = FarmTab:CreateButton({
+    Name = "🚀 Teleport to Saved Position",
+    Callback = function()
+        local plr = game.Players.LocalPlayer.Name
+        if LocalLastPosition then
+            game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(LocalLastPosition)
+    
+            Rayfield:Notify({
+                Title = "🛸 Teleported",
+                Content = "You have been teleported to your saved position.",
+                Duration = 6.5,
+                Image = 4483362458,
+            })
+    
+            print("🛸 Teleported to:", LocalLastPosition)
+        else
+            Rayfield:Notify({
+                Title = "⚠️ No Saved Position",
+                Content = "Please save a position before trying to teleport.",
+                Duration = 6.5,
+                Image = 4483362458,
+            })
+    
+            warn("⚠️ No position saved yet! Use 'Save Current Position' first.")
+        end
+    end,
+    })
 
-        print("🛸 Teleported to:", LocalLastPosition)
-    else
-        Rayfield:Notify({
-            Title = "⚠️ No Saved Position",
-            Content = "Please save a position before trying to teleport.",
-            Duration = 6.5,
-            Image = 4483362458,
-        })
 
-        warn("⚠️ No position saved yet! Use 'Save Current Position' first.")
+    local selectedGroups = {}
+    local visibleTags = {}
+    local showDistance = false
+    local maxDistance = 250 -- valeur par défaut du slider
+    
+    local groupColors = {
+        ["CrystallineMetalOre"] = Color3.fromRGB(0, 255, 255),
+        ["CubicBlockMetal"] = Color3.fromRGB(255, 255, 255),
+        ["GemBlockMesh"] = Color3.fromRGB(255, 0, 255),
+        ["OreMesh"] = Color3.fromRGB(255, 170, 0),
+        ["ShaleMetalBlock"] = Color3.fromRGB(150, 75, 0),
+    }
+    
+    local function createOreTag(ore)
+        local mineId = ore:GetAttribute("MineId")
+        if not mineId then return end
+    
+        local groupColor = groupColors[ore.Name] or Color3.new(1, 1, 1)
+    
+        -- Billboard tag
+        local tag = Instance.new("BillboardGui")
+        tag.Name = "OreTag"
+        tag.Adornee = ore
+        tag.Size = UDim2.new(0, 100, 0, 30)
+        tag.StudsOffset = Vector3.new(0, ore.Size.Y / 2 + 0.5, 0)
+        tag.AlwaysOnTop = true
+        tag.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        tag.Parent = ore
+    
+        -- Label du minerai
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 0.5, 0)
+        label.Position = UDim2.new(0, 0, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = mineId
+        label.TextColor3 = groupColor
+        label.TextStrokeColor3 = Color3.new(0, 0, 0)
+        label.TextStrokeTransparency = 0
+        label.TextScaled = true
+        label.Font = Enum.Font.Code
+        label.ZIndex = 2
+        label.Parent = tag
+    
+        local distanceLabel
+        if showDistance then
+            distanceLabel = Instance.new("TextLabel")
+            distanceLabel.Size = UDim2.new(1, 0, 0.5, 0)
+            distanceLabel.Position = UDim2.new(0, 0, 0.5, 0)
+            distanceLabel.BackgroundTransparency = 1
+            distanceLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+            distanceLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+            distanceLabel.TextStrokeTransparency = 0
+            distanceLabel.TextScaled = true
+            distanceLabel.Font = Enum.Font.Code
+            distanceLabel.ZIndex = 2
+            distanceLabel.Name = "DistanceLabel"
+            distanceLabel.Parent = tag
+        end
+    
+        -- Overlay simple
+        local overlay = Instance.new("BoxHandleAdornment")
+        overlay.Name = "OreOverlay"
+        overlay.Adornee = ore
+        overlay.Size = ore.Size * 0.90
+        overlay.Color3 = groupColor
+        overlay.Transparency = 0.8
+        overlay.ZIndex = 1
+        overlay.AlwaysOnTop = true
+        overlay.Parent = ore
+    
+        -- Suivi de distance + gestion mort / tp
+        task.spawn(function()
+            while tag and tag.Parent and overlay and overlay.Parent do
+                local char = game.Players.LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local dist = (hrp.Position - ore.Position).Magnitude
+                    if dist > maxDistance then
+                        tag.Enabled = false
+                        overlay.Visible = false
+                    else
+                        tag.Enabled = true
+                        overlay.Visible = true
+                        if distanceLabel then
+                            distanceLabel.Text = string.format("%.1f studs", dist)
+                        end
+                    end
+                else
+                    tag.Enabled = false
+                    overlay.Visible = false
+                end
+                task.wait(0.3)
+            end
+        end)
+    
+        table.insert(visibleTags, tag)
+        table.insert(visibleTags, overlay)
     end
-end,
-})
-
-local Button = TeleportTab:CreateButton({
-   Name = "Tp teo",
-   Callback = function()
-    local plr = game.Players.LocalPlayer.Name
-    local target = game.Workspace.Tfou3likbebekmouk.HumanoidRootPart.Position
-
-    game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(target)
-   end,
-})
-local Button = TeleportTab:CreateButton({
-   Name = "Tp matheo",
-   Callback = function()
-    local plr = game.Players.LocalPlayer.Name
-    local target = game.Workspace.Vseety.HumanoidRootPart.Position
-
-    game.Workspace[plr].HumanoidRootPart.CFrame = CFrame.new(target)
-   end,
-})
-
-
-
+    
+    local function clearTags()
+        for _, tag in ipairs(visibleTags) do
+            if tag and tag.Parent then
+                tag:Destroy()
+            end
+        end
+        visibleTags = {}
+    end
+    
+    local function showOresByGroup()
+        clearTags()
+        if #selectedGroups == 0 then return end
+    
+        for _, group in ipairs(selectedGroups) do
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("BasePart") and obj:GetAttribute("MineId") and obj.Name == group then
+                    createOreTag(obj)
+                end
+            end
+        end
+    end
+    
+    local displayToReal = {
+        ["🔷 Crystalline Metal Ore"] = "CrystallineMetalOre",
+        ["🧊 Cubic Block Metal"] = "CubicBlockMetal",
+        ["💎 Gem Block Mesh"] = "GemBlockMesh",
+        ["⛏️ Ore Mesh"] = "OreMesh",
+        ["🌑 Shale Metal Block"] = "ShaleMetalBlock"
+    }
+    
+    local Dropdown = FarmTab:CreateDropdown({
+        Name = "🧱 View Ore Groups",
+        Options = {
+            "🔷 Crystalline Metal Ore",
+            "🧊 Cubic Block Metal",
+            "💎 Gem Block Mesh",
+            "⛏️ Ore Mesh",
+            "🌑 Shale Metal Block"
+        },
+        CurrentOption = {},
+        MultipleOptions = true,
+        Flag = "OreGroupDropdown",
+        Callback = function(Options)
+            -- Convert selected display names to real group names
+            local realOptions = {}
+            for _, option in ipairs(Options) do
+                local real = displayToReal[option]
+                if real then
+                    table.insert(realOptions, real)
+                end
+            end
+            selectedGroups = realOptions
+            showOresByGroup()
+        end,
+    })
+    
+    
+    -- Toggle pour voir la distance
+    local Toggle = FarmTab:CreateToggle({
+       Name = "📏 Afficher distance joueur",
+       CurrentValue = false,
+       Flag = "ShowDistanceToggle",
+       Callback = function(Value)
+            showDistance = Value
+            showOresByGroup()
+       end,
+    })
+    
+    -- Slider pour régler la distance max
+    local Slider = FarmTab:CreateSlider({
+       Name = "📡 Distance max minerais",
+       Range = {10, 500},
+       Increment = 10,
+       Suffix = "studs",
+       CurrentValue = maxDistance,
+       Flag = "OreMaxDistanceSlider",
+       Callback = function(Value)
+            maxDistance = Value
+            showOresByGroup()
+       end,
+    })
+    
+    -- Support de mise à jour dynamique si des minerais apparaissent
+    workspace.DescendantAdded:Connect(function(obj)
+        if obj:IsA("BasePart") and obj:GetAttribute("MineId") and table.find(selectedGroups, obj.Name) then
+            task.wait(0.2)
+            createOreTag(obj)
+        end
+    end)
     
 end
+    
